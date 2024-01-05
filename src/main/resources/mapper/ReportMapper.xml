@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunny.excelutil.dao.ReportMapper">
+
+
+    <select id="getList" parameterType="com.sunny.excelutil.dto.CrmOrderBookDto" resultType="com.sunny.excelutil.dto.CrmOrderBookExportDto">
+
+
+
+        SELECT
+        *
+        FROM
+        (
+        SELECT
+        TMP.*,
+        ROWNUM ROW_ID
+        FROM
+        (
+    select
+    vbak.VKORG as company,
+    ltrim(vbak.KUNNR, '0') as customerNnum,
+    KNA1.NAME1 as customerName,
+    VGRT.BEZEI as businessPerson,
+    bkd.BSTDK as puorderDate,
+    vbak.AUART as orderType,
+    vbak.BSTNK as customerOrdernumber,
+    ltrim(vbak.VBELN, '0') as OrderNumber,
+    ltrim(bap.POSNR, '0') as orderLineNumber,
+    bap.MATNR as materialNumber,
+    MAKT.MAKTX as materialName,
+    bap.KDMAT as customerMaterialNumber,
+    bap.NETPR / bap.KPEIN as costPrice,
+    bap.KWMENG as orderQuantity,
+    bap.NETWR as amount,
+    VBEP.EDATU as firstOrderDate,
+    vbak.WAERK as certificateCurrency,
+    LIKP.WADAT_IST as shipmentDate,
+    LIPS.LFIMG as shipmentAmount,
+    ltrim(LIKP.KUNAG, '0') AS cusnum,
+    LIPS.VBELN as cjhd,
+    case
+    when LIPS.VGBEL = bap.VBELN and
+    LIPS.VGPOS = bap.POSNR then
+    (bap.KWMENG -
+    (select sum(LFIMG)
+    from ods_ecc.O_LIPS lips
+    where lips.VGBEL = vbak.VBELN
+    and lips.MATNR = bap.MATNR
+    and lips.VGPOS = bap.POSNR
+    and LIPS.MANDT = '800'))
+    else
+    null
+    end as orderResidue,
+    bap.LGORT as stockLocation
+    from ods_ecc.O_VBAK vbak
+    left join ods_ecc.O_VBAP bap
+    on bap.VBELN = vbak.VBELN
+    and bap.MANDT = '800'
+    left join ods_ecc.O_LIPS LIPS
+    on LIPS.VGBEL = bap.VBELN
+    and LIPS.MANDT = '800'
+    and LIPS.VGPOS = bap.POSNR
+    left join ods_ecc.O_LIKP LIKP
+    on LIPS.VBELN = LIKP.VBELN
+    and LIKP.MANDT = '800'
+    left join ods_ecc.O_VBKD bkd
+    on bkd.VBELN = vbak.VBELN
+    and bkd.MANDT = '800'
+    left join ods_ecc.O_VBEP VBEP
+    on VBEP.MANDT = '800'
+    and bap.POSNR = VBEP.POSNR
+    and bap.VBELN = VBEP.VBELN
+    left join ods_ecc.O_KNA1 KNA1
+    on KNA1.KUNNR = vbak.KUNNR
+    and KNA1.MANDT = '800'
+    left join ods_ecc.O_MAKT MAKT
+    on bap.MATNR = MAKT.MATNR
+    and MAKT.MANDT = '800'
+    AND MAKT.SPRAS = '1'
+    left join ods_ecc.O_TVGRT VGRT
+    on VGRT.VKGRP = vbak.VKGRP
+    and VGRT.MANDT = '800'
+    where
+    vbak.MANDT = '800'
+
+    <if test="company != null and company != ''">
+        and vbak.VKORG = #{company}
+    </if>
+        ) TMP
+        WHERE
+        ROWNUM <![CDATA[<=]]> 100
+        )
+        WHERE
+        ROW_ID <![CDATA[>=]]> 0
+
+
+    </select>
+
+
+</mapper>
